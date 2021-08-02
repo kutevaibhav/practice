@@ -1,0 +1,26 @@
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+[System.Net.WebRequest]::DefaultWebProxy = [System.Net.WebRequest]::GetSystemWebProxy()
+[System.Net.WebRequest]::DefaultWebProxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
+$csv = Import-Csv C:\Share\new.csv
+$DestFile="C:\Share\certificate.htm"
+echo "" > $DestFile
+echo "Hi Team, <br> Please find certificate expiry details" >> $DestFile
+echo "<br><br>" >> $DestFile
+echo "<table border=1><Tr><th>Application Name</th><th>URL</th><th>Certificate start date</th><th>Certificate Expiry Date(mm/dd/yyyy)</th></tr>" >> $DestFile
+$csv | ForEach-Object {
+    $Application = $_.Application
+    $URL = $_.URL
+    $req = [Net.HttpWebRequest]::Create($url)
+	$req.GetResponse() | Out-Null
+$Cert_Start_Date = $req.ServicePoint.Certificate.GetEffectiveDateString()   
+$Cert_Expiry_Date = $req.ServicePoint.Certificate.GetExpirationDateString()
+echo $Application
+echo "<tr><td>$Application</td><td>$URL</td><td>$Cert_Start_Date</td><td>$Cert_Expiry_Date</td></tr>" >> $DestFile
+
+}
+
+echo "</table>" >> $DestFile
+echo "<br>Thanks,<br>SLS<br>">> $DestFile
+echo "script completed"
+
