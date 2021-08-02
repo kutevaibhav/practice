@@ -1,0 +1,41 @@
+$SourceFile="C:\Share\service.txt"
+$DestFile="C:\Share\serviceexpired.htm"
+echo "" > $DestFile
+$Lines=Get-Content -Path $SourceFile
+echo "Hi Team, <br> Please find account details below and plan password reset activity accordingly." >> $DestFile
+echo "<br><br>" >> $DestFile
+echo "<table border=1><Tr><th>Service Account User Name</th><th>Password last set(mm/dd/yyyy)</th><th>No of days remaining</th><th>Password change required(mm/dd/yyyy)</th></tr>" >> $DestFile
+foreach ($Line in $Lines){
+if( $Line -eq "END" ){break}
+$str=(net user $Line /domain |find 'Password last set')
+$date1=$str.Replace("Password last set            ","")
+$CultureDateTimeFormat = (Get-Culture).DateTimeFormat
+$DateFormat = $CultureDateTimeFormat.ShortDatePattern
+$TimeFormat = $CultureDateTimeFormat.LongTimePattern
+$DateTimeFormat = "$DateFormat $TimeFormat"
+$DateTime1=[DateTime]::ParseExact("$date1",$DateTimeFormat,[System.Globalization.DateTimeFormatInfo]::InvariantInfo,[System.Globalization.DateTimeStyles]::None)
+$pastday=Get-Date       
+$ts = New-TimeSpan -Start $DateTime1 -End $pastday
+#if( $ts.Days -gt  160 )
+$ts = 180 - $ts.Days
+$tmp1 = $DateTime1.addDays(180)
+echo "<tr><td>$Line</td><td>$DateTime1</td><td>" $ts "</td><td>$tmp1</td></tr>" >> $DestFile
+echo "Exp: $DateTime1 next date: $tmp1"
+}
+
+
+echo "script finished sending mail..."
+echo "</table>" >> $DestFile
+echo "<br>Thanks,<br>SLS<br>">> $DestFile
+echo "script completed"
+$OutputFile="C:\Share\serviceexpired.htm"
+$from="DoNotReply@xyz.com"
+$to="xyz@xyz.com"
+$subject="Service Account Notification"
+$body= (Get-Content $OutputFile | out-string )
+$mailer = new-object Net.Mail.SMTPclient("appsmtp-north.internal.xyz.com","25")
+$msg = new-object Net.Mail.MailMessage($from,$to,$subject,$body)
+$msg.IsBodyHTML = $true
+$mailer.send($msg)
+
+echo "script finished mail sent"
